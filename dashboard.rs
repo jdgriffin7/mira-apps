@@ -46,7 +46,7 @@ const MAX_MAIL: usize = 10;
 const MAX_TASK: usize = 12;
 const BUF_CAP: usize = 3500;
 const TASK_ROWS: usize = 6;
-const PAGE_NAMES: [&[u8]; 5] = [b"OVERVIEW", b"AGENDA", b"TO DO", b"INBOX", b"NOTE"];
+const PAGE_NAMES: [&[u8]; 5] = [b"OVERVIEW", b"CALENDAR", b"TO DO", b"INBOX", b"NOTE"];
 
 #[derive(Clone, Copy)]
 struct Span { s: u16, n: u16 }
@@ -442,7 +442,7 @@ unsafe fn overview() {
 }
 
 unsafe fn agenda() {
-    label(32, 162, 300, 24, 9, F18, 0, b"AGENDA");
+    label(32, 162, 300, 24, 9, F18, 0, b"CALENDAR");
     let now = now_min();
     let mut row = 0;
     for i in 0..EV_N {
@@ -544,7 +544,7 @@ unsafe fn render() {
     if !HAVE_DATA {
         label(32, 180, 576, 34, 15, F24, 0, b"Waiting for your phone");
         wrap(32, 222, 576, 28, 3, 10, F18,
-            b"Open Glance Dashboard in the MIRA app to sync your agenda, tasks and weather.");
+            b"Open Glance Dashboard in the MIRA app to sync your calendar, tasks and weather.");
         content::cursor(0, 0, false);
     } else {
         let p = page();

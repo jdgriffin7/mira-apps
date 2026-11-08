@@ -4,7 +4,7 @@ A G2-style heads-up dashboard for MIRA glasses. The clock, date and weather sit 
 and you swipe through five panels below:
 
 - **Overview:** your next event with a countdown, your top tasks and your unread count
-- **Agenda:** today and tomorrow, with all-day events first and "now" for events in progress
+- **Calendar:** today, then tomorrow (labeled "tomorrow"), with all-day events first within each day and "now" for events in progress
 - **To Do:** tap a task on the glasses to check it off; it syncs back to your phone
 - **Inbox:** your 10 newest Gmail threads, with unread ones marked by a dot (optional)
 - **Note:** a short note you pin from your phone
@@ -37,7 +37,7 @@ To update, long-press the app card and tap **Edit App**. Upload the new file, th
 
 ## Optional: live Google Calendar + Gmail
 
-Without this, Agenda shows only the events you type in on the phone, and Inbox stays empty.
+Without this, Calendar shows only the events you type in on the phone, and Inbox stays empty.
 With it, a small Google Apps Script running in **your own** Google account serves your
 calendar and newest inbox threads. Your data goes straight from Google to your phone,
 and no third-party server is involved.
@@ -69,7 +69,7 @@ The build prints `Live feed: on` or `Live feed: off`. Install the file only if v
 | File             | What it is                                            |
 |------------------|-------------------------------------------------------|
 | `dashboard.rs`   | Glasses side (Rust compiled to WASM)                  |
-| `companion.html` | Phone screen: agenda, tasks, note, weather and settings |
+| `companion.html` | Phone screen: calendar, tasks, note, weather and settings |
 | `package.py`     | Build script using MIRA's documented compiler flags   |
 | `GlanceFeed.gs`  | Optional Google Apps Script for live calendar and inbox |
 
