@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Glance Dashboard</title>
+<script type="application/mira-manifest+json">{"title":"Glance Dashboard"}</script>
+<style>
+:root{
+  --bg:#050705;--surface:#0a0d0a;--card:#0e130f;--line:#1c2a20;--line2:#29432f;
+  --green:#00ff66;--bright:#4efa8b;--dim:#186632;--muted:#8fb397;--text:#e8f5ea;--danger:#ff6b6b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+main{max-width:560px;margin:0 auto;padding:16px 16px 40px}
+h1{font:700 20px/1.2 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.04em;margin:0}
+h1 span{color:var(--green);font-weight:400}
+h2{font:600 13px/1 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.08em;color:var(--bright);margin:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.pill{font:12px ui-monospace,Menlo,monospace;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.pill.ok{color:var(--bright);border-color:var(--dim)}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sub{font:12px ui-monospace,Menlo,monospace;color:var(--muted)}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+li:first-child{border-top:0}
+li .main{flex:1;min-width:0}
+li .title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+li .meta{font:12px ui-monospace,Menlo,monospace;color:var(--muted)}
+li .time{font:600 14px ui-monospace,Menlo,monospace;color:var(--bright);min-width:62px}
+li.done .title{text-decoration:line-through;color:var(--muted)}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+input,select,textarea,button{font:inherit;color:var(--text)}
+input,select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;min-width:0}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green)}
+textarea{resize:vertical;min-height:84px}
+.row{display:flex;gap:8px;margin-top:8px}
+.row>*{flex:1}
+.row>.narrow{flex:0 0 auto;width:auto}
+button{background:var(--dim);border:1px solid var(--dim);border-radius:10px;padding:10px 14px;font-weight:600;color:var(--bright)}
+button.primary{background:var(--green);border-color:var(--green);color:#03140a}
+button.ghost{background:transparent;border-color:var(--line);color:var(--muted)}
+button.icon{background:transparent;border:0;color:var(--muted);padding:6px 8px;font-size:18px;line-height:1}
+.check{width:26px;height:26px;flex:0 0 26px;border-radius:7px;border:2px solid var(--dim);background:transparent;padding:0;color:#03140a;font-size:16px}
+li.done .check{background:var(--green);border-color:var(--green)}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;background:transparent}
+li.unread .dot{background:var(--green)}
+li.unread .title{font-weight:600}
+.live{font:11px ui-monospace,Menlo,monospace;color:var(--bright);border:1px solid var(--dim);border-radius:6px;padding:2px 6px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+#banner{display:none;background:#1a1405;border:1px solid #4a3a10;color:#f3d27a;border-radius:10px;padding:10px;font-size:13px;margin-bottom:14px}
+</style>
+</head>
+<body>
+<main id="mira-companion-root">
+  <div class="top">
+    <h1>GLANCE <span>DASH</span></h1>
+    <span id="link" class="pill">Waiting for glasses</span>
+  </div>
+  <div id="banner">Preview mode: open this app inside MIRA to sync with your glasses.</div>
+
+  <section>
+    <div class="head"><h2>AGENDA</h2><span class="sub">Today &amp; tomorrow</span></div>
+    <p id="calStatus" class="note" style="margin:0 0 6px"></p>
+    <ul id="events"></ul>
+    <form id="eventForm">
+      <input id="evTitle" placeholder="Event title" maxlength="60" required>
+      <div class="row">
+        <input id="evTime" type="time" required>
+        <select id="evDay"><option value="0">Today</option><option value="1">Tomorrow</option></select>
+      </div>
+      <div class="row">
+        <input id="evTag" placeholder="Tag (optional)" maxlength="16">
+        <button class="primary narrow" type="submit">Add</button>
+      </div>
+    </form>
+  </section>
+
+  <section>
+    <div class="head"><h2>TO DO</h2><span id="taskCount" class="sub"></span></div>
+    <ul id="tasks"></ul>
+    <form id="taskForm" class="row">
+      <input id="taskText" placeholder="Add a task" maxlength="80" required>
+      <button class="primary narrow" type="submit">Add</button>
+    </form>
+    <div class="row"><button id="clearDone" class="ghost" type="button">Clear completed</button></div>
+    <p class="note">On the glasses: swipe to a task, tap to check it off.</p>
+  </section>
+
+  <section>
+    <div class="head"><h2>INBOX</h2><span id="mailCount" class="sub"></span></div>
+    <ul id="threads"></ul>
+    <p id="feedStatus" class="note"></p>
+  </section>
+
+  <section>
+    <div class="head"><h2>PINNED NOTE</h2><span class="sub">Last panel on the glasses</span></div>
+    <input id="noteTitle" placeholder="Title (optional)" maxlength="30">
+    <label for="noteBody">Note</label>
+    <textarea id="noteBody" maxlength="700" placeholder="Anything you want at a glance"></textarea>
+    <div class="row"><button id="noteSave" class="primary" type="button">Pin to glasses</button><button id="noteClear" class="ghost narrow" type="button">Clear</button></div>
+  </section>
+
+  <section>
+    <div class="head"><h2>WEATHER &amp; CLOCK</h2><span id="wxNow" class="sub"></span></div>
+    <label for="wxPlace">Location</label>
+    <div class="row" style="margin-top:0"><input id="wxPlace" placeholder="City, e.g. Chicago"><button id="wxSet" class="narrow" type="button">Set</button></div>
+    <div class="row">
+      <div><label for="wxUnit">Units</label><select id="wxUnit"><option value="F">°F</option><option value="C">°C</option></select></div>
+      <div><label for="clock">Clock</label><select id="clock"><option value="24">24-hour</option><option value="12">12-hour</option></select></div>
+    </div>
+    <label for="wxManual">Override text (leave blank for live weather)</label>
+    <input id="wxManual" maxlength="28" placeholder="e.g. 58F Clear">
+    <p id="wxStatus" class="note"></p>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var bridge = window.miraCompanion || null;
+  var KEY = 'Glance Dashboard.state';
+  var state = {
+    events: [],
+    tasks: [
+      { id: 1, text: 'Swipe to this task on the glasses, then tap', done: false },
+      { id: 2, text: 'Set your weather location below', done: false },
+      { id: 3, text: 'Delete these examples when you are ready', done: true }
+    ],
+    note: { title: '', body: '' },
+    weather: { place: '', lat: null, lon: null, unit: 'F', manual: '', text: '', at: 0 },
+    clock: '24'
+  };
+  // Filled in by package.py from feed-url.txt (your Apps Script URL + key).
+  // Kept in the app file, not in companion storage, because it unlocks your mail.
+  var FEED_URL = '__GLANCE_FEED_URL__';
+  if (FEED_URL.indexOf('__') === 0) FEED_URL = '';
+  var live = { events: [], threads: [], at: 0, error: '' };
+  var lastPacked = '';
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------- storage ----------
+  function load() {
+    var read = bridge && bridge.storeGet ? bridge.storeGet(KEY)
+      : Promise.resolve((function () { try { return localStorage.getItem(KEY); } catch (e) { return null; } })());
+    return Promise.resolve(read).then(function (raw) {
+      if (!raw) return;
+      try {
+        var s = JSON.parse(raw);
+        if (s && typeof s === 'object') {
+          ['events', 'tasks'].forEach(function (k) { if (Array.isArray(s[k])) state[k] = s[k]; });
+          if (s.note) state.note = s.note;
+          if (s.weather) for (var k in s.weather) state.weather[k] = s.weather[k];
+          if (s.clock) state.clock = s.clock;
+        }
+      } catch (e) { /* keep defaults */ }
+    }).catch(function () {});
+  }
+  function save() {
+    var raw = JSON.stringify(state);
+    if (bridge && bridge.storeSet) { Promise.resolve(bridge.storeSet(KEY, raw)).catch(function () {}); }
+    else { try { localStorage.setItem(KEY, raw); } catch (e) {} }
+  }
+
+  // ---------- packing for the glasses ----------
+  function clean(s, max) {
+    return String(s == null ? '' : s)
+      .replace(/[\u{10000}-\u{10FFFF}]/gu, '')
+      .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+      .replace(/\s+/g, ' ').trim().slice(0, max);
+  }
+  function todayStart() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+  function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function minutesFromToday(ev) {
+    var p = ev.date.split('-').map(Number), t = ev.time.split(':').map(Number);
+    var day = Math.round((new Date(p[0], p[1] - 1, p[2]) - todayStart()) / 864e5);
+    return day * 1440 + t[0] * 60 + t[1];
+  }
+  function nowMin() { return Math.floor((Date.now() - todayStart()) / 60000); }
+  function isoMinutes(iso) { return Math.round((new Date(iso) - todayStart()) / 60000); }
+  function dateMinutes(ymdStr) {
+    var p = ymdStr.split('-').map(Number);
+    return Math.round((new Date(p[0], p[1] - 1, p[2]) - todayStart()) / 864e5) * 1440;
+  }
+  // Manual and live events as {title, tag, m (start), end, allDay, live}.
+  function upcoming() {
+    var now = nowMin();
+    var list = state.events.map(function (e) {
+      var m = minutesFromToday(e);
+      return { e: e, title: e.title, tag: e.tag, m: m, end: m + 60, allDay: false, live: false };
+    });
+    live.events.forEach(function (e) {
+      if (e.allDay) {
+        list.push({ title: e.title, tag: e.calendar, m: dateMinutes(e.start), end: dateMinutes(e.end), allDay: true, live: true });
+      } else {
+        list.push({ title: e.title, tag: e.calendar, m: isoMinutes(e.start), end: isoMinutes(e.end), allDay: false, live: true });
+      }
+    });
+    return list
+      .filter(function (x) { return x.end > now && x.m < 2880; })
+      .sort(function (a, b) { return (a.allDay === b.allDay) ? a.m - b.m : (a.allDay ? -1 : 1); });
+  }
+  function whenLabel(iso) {
+    var d = new Date(iso);
+    if (d >= todayStart()) return state.clock === '12'
+      ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(' ', '')
+      : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  function orderedTasks() {
+    return state.tasks.filter(function (t) { return !t.done; }).concat(state.tasks.filter(function (t) { return t.done; }));
+  }
+  function pack(noteLimit, taskLimit, subjLimit) {
+    var lines = ['S\t' + (state.clock === '12' ? '12' : '24')];
+    var wx = clean(state.weather.manual, 28) || clean(state.weather.text, 28);
+    if (wx) lines.push('W\t' + wx);
+    upcoming().slice(0, 10).forEach(function (x) {
+      lines.push(['E', Math.max(0, x.m), Math.max(0, x.end), clean(x.title, 60), clean(x.tag, 16), x.allDay ? 1 : 0].join('\t'));
+    });
+    live.threads.slice(0, 10).forEach(function (t) {
+      lines.push(['M', t.unread ? 1 : 0, clean(t.from, 24), clean(t.subject, subjLimit), whenLabel(t.date)].join('\t'));
+    });
+    orderedTasks().slice(0, taskLimit).forEach(function (t) {
+      lines.push(['K', String(t.id).replace(/\D/g, ''), t.done ? 1 : 0, clean(t.text, 80)].join('\t'));
+    });
+    var body = String(state.note.body || '').split(/\r?\n/).map(function (l) { return clean(l, 700); }).join('\r').slice(0, noteLimit);
+    if (body || state.note.title) lines.push(['N', clean(state.note.title, 30), body].join('\t'));
+    return lines.join('\n');
+  }
+  function bytes(s) { return new TextEncoder().encode(s).length; }
+  function packFitting() {
+    var noteLimit = 700, taskLimit = 12, subjLimit = 70, p = pack(noteLimit, taskLimit, subjLimit);
+    while (bytes(JSON.stringify({ t: 'd', p: p })) > 3400 && (noteLimit > 0 || subjLimit > 30 || taskLimit > 0)) {
+      if (noteLimit > 0) noteLimit = Math.max(0, noteLimit - 100);
+      else if (subjLimit > 30) subjLimit -= 10;
+      else taskLimit--;
+      p = pack(noteLimit, taskLimit, subjLimit);
+    }
+    return p;
+  }
+  function publish(force) {
+    var p = packFitting();
+    if (!force && p === lastPacked) return;
+    lastPacked = p;
+    if (!bridge || !bridge.setSnapshotForApp) return;
+    Promise.resolve(bridge.setSnapshotForApp({ t: 'd', p: p })).then(function () {
+      setLink('Sent ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), true);
+    }).catch(function () { setLink('Glasses busy, retrying', false); setTimeout(function () { publish(true); }, 3000); });
+  }
+  function changed() { save(); render(); publish(false); }
+
+  // ---------- messages from the glasses ----------
+  if (bridge && bridge.onFromApp) {
+    var stop = bridge.onFromApp(function (m) {
+      if (!m || typeof m !== 'object') return;
+      setLink('Glasses connected', true);
+      if (m.type === 'sync') { publish(true); if (Date.now() - live.at > 60e3) refreshFeed(); return; }
+      if (m.type === 'set') {
+        state.tasks.forEach(function (t) { if (String(t.id) === String(m.id)) t.done = !!m.done; });
+        save(); render(); publish(true);
+      }
+    });
+    window.addEventListener('pagehide', function () { if (typeof stop === 'function') stop(); });
+  } else {
+    $('banner').style.display = 'block';
+  }
+  function setLink(text, ok) { var el = $('link'); el.textContent = text; el.className = 'pill' + (ok ? ' ok' : ''); }
+
+  // ---------- live calendar + inbox (your Apps Script feed) ----------
+  function refreshFeed() {
+    if (!FEED_URL) { renderFeedStatus(); return; }
+    fetch(FEED_URL, { redirect: 'follow', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) {
+        if (d.error) throw new Error(d.error);
+        live.events = Array.isArray(d.events) ? d.events : [];
+        live.threads = Array.isArray(d.threads) ? d.threads : [];
+        live.at = Date.now();
+        live.error = (d.errors && d.errors.length) ? d.errors.join('; ') : '';
+        render(); publish(false);
+      })
+      .catch(function (e) { live.error = String(e.message || e); renderFeedStatus(); });
+  }
+  function renderFeedStatus() {
+    var msg;
+    if (!FEED_URL) msg = 'Live calendar and inbox are off. Add your feed URL to feed-url.txt and rebuild.';
+    else if (live.error) msg = 'Feed problem: ' + live.error + (live.at ? ' (showing last update)' : '');
+    else if (live.at) msg = 'Live \u00b7 updated ' + new Date(live.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    else msg = 'Loading live data...';
+    $('feedStatus').textContent = msg;
+    $('calStatus').textContent = FEED_URL ? msg : 'Add events below, or connect Google Calendar (see README).';
+  }
+
+  // ---------- weather (Open-Meteo, no key needed) ----------
+  var WX = { 0: 'Clear', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Cloudy', 45: 'Fog', 48: 'Fog', 51: 'Drizzle', 53: 'Drizzle',
+    55: 'Drizzle', 56: 'Icy drizzle', 57: 'Icy drizzle', 61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 66: 'Icy rain',
+    67: 'Icy rain', 71: 'Light snow', 73: 'Snow', 75: 'Heavy snow', 77: 'Snow', 80: 'Showers', 81: 'Showers', 82: 'Heavy showers',
+    85: 'Snow showers', 86: 'Snow showers', 95: 'Storms', 96: 'Storms', 99: 'Storms' };
+  function refreshWeather(force) {
+    var w = state.weather;
+    if (w.lat == null || w.lon == null) { $('wxStatus').textContent = 'Set a location to show weather.'; return; }
+    if (!force && Date.now() - (w.at || 0) < 30 * 60e3 && w.text) return;
+    var unit = w.unit === 'C' ? 'celsius' : 'fahrenheit';
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + w.lat + '&longitude=' + w.lon +
+      '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto&temperature_unit=' + unit;
+    $('wxStatus').textContent = 'Updating weather...';
+    fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(function (d) {
+      var u = w.unit === 'C' ? 'C' : 'F';
+      var t = Math.round(d.current.temperature_2m);
+      var hi = Math.round(d.daily.temperature_2m_max[0]), lo = Math.round(d.daily.temperature_2m_min[0]);
+      w.text = t + u + ' ' + (WX[d.current.weather_code] || '') + '  H' + hi + ' L' + lo;
+      w.at = Date.now();
+      $('wxStatus').textContent = w.place + ' · updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      changed();
+    }).catch(function (e) { $('wxStatus').textContent = 'Weather unavailable (' + (e.message || e) + ')'; });
+  }
+  function setPlace() {
+    var q = $('wxPlace').value.trim();
+    if (!q) return;
+    $('wxStatus').textContent = 'Looking up ' + q + '...';
+    fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name=' + encodeURIComponent(q.split(',')[0]))
+      .then(function (r) { return r.json(); }).then(function (d) {
+        var g = d && d.results && d.results[0];
+        if (!g) { $('wxStatus').textContent = 'Could not find "' + q + '"'; return; }
+        state.weather.place = g.name + (g.admin1 ? ', ' + g.admin1 : '');
+        state.weather.lat = g.latitude; state.weather.lon = g.longitude;
+        $('wxPlace').value = state.weather.place;
+        save(); refreshWeather(true);
+      }).catch(function (e) { $('wxStatus').textContent = 'Lookup failed (' + (e.message || e) + ')'; });
+  }
+
+  // ---------- rendering ----------
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function fmtTime(hm) {
+    if (state.clock !== '12') return hm;
+    var t = hm.split(':').map(Number), h = t[0] % 12 || 12;
+    return h + ':' + String(t[1]).padStart(2, '0') + (t[0] < 12 ? ' AM' : ' PM');
+  }
+  function render() {
+    var list = $('events'); list.textContent = '';
+    var up = upcoming();
+    if (!up.length) list.appendChild(el('li', 'empty', 'No events today or tomorrow.'));
+    up.forEach(function (x) {
+      var li = el('li');
+      var mm = ((x.m % 1440) + 1440) % 1440;
+      var hm = String(Math.floor(mm / 60)).padStart(2, '0') + ':' + String(mm % 60).padStart(2, '0');
+      li.appendChild(el('span', 'time', x.allDay ? 'All day' : (x.m < 0 ? 'Now' : fmtTime(hm))));
+      var main = el('div', 'main');
+      main.appendChild(el('div', 'title', x.title));
+      main.appendChild(el('div', 'meta', (x.m >= 1440 ? 'Tomorrow' : 'Today') + (x.tag ? ' \u00b7 ' + x.tag : '')));
+      li.appendChild(main);
+      if (x.live) {
+        li.appendChild(el('span', 'live', 'CAL'));
+      } else {
+        var del = el('button', 'icon', '\u00d7'); del.type = 'button'; del.setAttribute('aria-label', 'Delete event');
+        del.onclick = function () { state.events = state.events.filter(function (e) { return e !== x.e; }); changed(); };
+        li.appendChild(del);
+      }
+      list.appendChild(li);
+    });
+
+    var ml = $('threads'); ml.textContent = '';
+    if (!live.threads.length) ml.appendChild(el('li', 'empty', FEED_URL ? 'No threads yet.' : 'Inbox feed not set up.'));
+    live.threads.slice(0, 10).forEach(function (t) {
+      var li = el('li', t.unread ? 'unread' : '');
+      li.appendChild(el('span', 'dot'));
+      var main = el('div', 'main');
+      main.appendChild(el('div', 'title', t.subject));
+      main.appendChild(el('div', 'meta', t.from + (t.count > 1 ? ' (' + t.count + ')' : '')));
+      li.appendChild(main);
+      li.appendChild(el('span', 'meta', whenLabel(t.date)));
+      ml.appendChild(li);
+    });
+    var unread = live.threads.filter(function (t) { return t.unread; }).length;
+    $('mailCount').textContent = live.threads.length ? unread + ' unread' : '';
+    renderFeedStatus();
+
+    var tl = $('tasks'); tl.textContent = '';
+    var tasks = orderedTasks();
+    if (!tasks.length) tl.appendChild(el('li', 'empty', 'Nothing to do.'));
+    tasks.forEach(function (t) {
+      var li = el('li', t.done ? 'done' : '');
+      var box = el('button', 'check', t.done ? '✓' : ''); box.type = 'button'; box.setAttribute('aria-label', 'Toggle task');
+      box.onclick = function () { t.done = !t.done; changed(); };
+      li.appendChild(box);
+      var main = el('div', 'main'); main.appendChild(el('div', 'title', t.text)); li.appendChild(main);
+      var del = el('button', 'icon', '×'); del.type = 'button'; del.setAttribute('aria-label', 'Delete task');
+      del.onclick = function () { state.tasks = state.tasks.filter(function (x) { return x !== t; }); changed(); };
+      li.appendChild(del);
+      tl.appendChild(li);
+    });
+    var left = state.tasks.filter(function (t) { return !t.done; }).length;
+    $('taskCount').textContent = left + ' left' + (state.tasks.length > 12 ? ' · first 12 on glasses' : '');
+    $('wxNow').textContent = clean(state.weather.manual, 28) || state.weather.text || '';
+  }
+
+  // ---------- wiring ----------
+  $('eventForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var day = new Date(todayStart().getTime() + Number($('evDay').value) * 864e5 + 3 * 36e5);
+    state.events.push({ id: Date.now(), title: $('evTitle').value.trim(), time: $('evTime').value, date: ymd(day), tag: $('evTag').value.trim() });
+    e.target.reset(); changed();
+  });
+  $('taskForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var text = $('taskText').value.trim(); if (!text) return;
+    state.tasks.unshift({ id: Date.now(), text: text, done: false });
+    $('taskText').value = ''; changed();
+  });
+  $('clearDone').onclick = function () { state.tasks = state.tasks.filter(function (t) { return !t.done; }); changed(); };
+  $('noteSave').onclick = function () { state.note = { title: $('noteTitle').value.trim(), body: $('noteBody').value }; changed(); };
+  $('noteClear').onclick = function () { $('noteTitle').value = ''; $('noteBody').value = ''; state.note = { title: '', body: '' }; changed(); };
+  $('wxSet').onclick = setPlace;
+  $('wxUnit').onchange = function () { state.weather.unit = this.value; save(); refreshWeather(true); };
+  $('clock').onchange = function () { state.clock = this.value; changed(); };
+  $('wxManual').onchange = function () { state.weather.manual = this.value.trim(); changed(); };
+
+  load().then(function () {
+    // Drop events from previous days.
+    var today = ymd(todayStart());
+    state.events = state.events.filter(function (e) { return e.date >= today; });
+    $('noteTitle').value = state.note.title || '';
+    $('noteBody').value = state.note.body || '';
+    $('wxPlace').value = state.weather.place || '';
+    $('wxUnit').value = state.weather.unit;
+    $('clock').value = state.clock;
+    $('wxManual').value = state.weather.manual || '';
+    render();
+    publish(true);
+    refreshWeather(false);
+    refreshFeed();
+    var ticks = 0;
+    setInterval(function () {
+      render(); publish(false); refreshWeather(false);
+      if (++ticks % 5 === 0) refreshFeed();   // live data every 5 minutes
+    }, 60e3);
+  });
+})();
+</script>
+</body>
+</html>

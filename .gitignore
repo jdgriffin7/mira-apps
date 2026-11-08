@@ -1,0 +1,12 @@
+# Your personal feed URL and key. Never commit this.
+feed-url.txt
+
+# Built apps. A build made with your feed contains your URL and key.
+# Attach the community build to a GitHub Release instead.
+*.html
+!companion.html
+
+# Build and OS leftovers
+__pycache__/
+*.wasm
+.DS_Store
