@@ -447,7 +447,8 @@ unsafe fn agenda() {
     let mut row = 0;
     for i in 0..EV_N {
         let e = EVS[i];
-        if row >= 6 || (!e.allday && now >= 0 && e.end <= now) || (e.allday && e.start >= 1440) { continue; }
+        // Today and tomorrow, matching the phone's list.
+        if row >= 6 || (!e.allday && now >= 0 && e.end <= now) || (e.allday && e.start >= 2880) { continue; }
         let y = 192 + row as i32 * 40;
         if e.allday {
             label(32, y + 4, 112, 26, 12, F18, 0, b"ALL DAY");
@@ -456,7 +457,9 @@ unsafe fn agenda() {
             label(32, y, 112, 30, 12, F24, 0, &c[..cn]);
         }
         label(150, y, 330, 30, 15, F24, 0, sl(e.title));
-        if now >= 0 && !e.allday {
+        if e.allday {
+            if e.start >= 1440 { label(484, y + 4, 124, 26, 10, F18, 2, b"tomorrow"); }
+        } else if now >= 0 {
             let mut d = [0u8; 16];
             let dn = if e.start <= now { push(&mut d, &mut 0, b"now"); 3 } else { countdown(e.start - now, &mut d) };
             label(484, y + 4, 124, 26, 10, F18, 2, &d[..dn]);

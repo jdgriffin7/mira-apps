@@ -200,7 +200,12 @@ label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
     });
     return list
       .filter(function (x) { return x.end > now && x.m < 2880; })
-      .sort(function (a, b) { return (a.allDay === b.allDay) ? a.m - b.m : (a.allDay ? -1 : 1); });
+      .sort(function (a, b) {
+        // Today before tomorrow; within a day, all-day events first.
+        var da = Math.floor(Math.max(0, a.m) / 1440), db = Math.floor(Math.max(0, b.m) / 1440);
+        if (da !== db) return da - db;
+        return (a.allDay === b.allDay) ? a.m - b.m : (a.allDay ? -1 : 1);
+      });
   }
   function whenLabel(iso) {
     var d = new Date(iso);
